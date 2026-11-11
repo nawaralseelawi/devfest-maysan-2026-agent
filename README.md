@@ -68,6 +68,20 @@ Allow save_note? [y/n] y
 Done. 500 USD = 740,000 IQD. Saved as "DevFest expenses".
 ```
 
+## Chat in the browser
+
+`chat.py` puts the same agent behind a chat page. It adds no agent logic: it reuses the tools and the model call from `agent.py`, and uses only the Python standard library for the page.
+
+```
+python chat.py
+```
+
+The browser opens `http://127.0.0.1:8000`. Type a task in Arabic or English, or click one of the suggestions. Each tool call appears as it happens, the approval question becomes two buttons, and saved notes show up in the `notes.json` panel. The conversation keeps its history until you click the new-chat button or reload the page.
+
+Leave the terminal window open while you use the page, and press Ctrl+C there to stop. If port 8000 is taken, choose another one first: `$env:PORT="8010"` in PowerShell, `export PORT=8010` on macOS or Linux.
+
+The page is served to this computer only (`127.0.0.1`). It is a demo, not something to put on a server.
+
 ## When a model is busy
 
 Popular models are sometimes overloaded and answer `503 ... experiencing high demand`. The agent does not hang on that: each request has a 30 second timeout, silent retries are off, and on the first request it moves on to the next model in `FALLBACK_MODELS`:
@@ -133,6 +147,10 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 تحتاج Python 3.10 أو أحدث، ومفتاحاً من Google AI Studio. ثبّت الحزمة بالأمر `pip install -r requirements.txt`، وضع المفتاح في متغير البيئة `GEMINI_API_KEY`، ثم شغّل `python agent.py`. وحين يسألك عن السماح بالحفظ اكتب `y`.
 
 في Windows PowerShell يوضع المفتاح بالصيغة `$env:GEMINI_API_KEY="..."`، والأمر `set` لا يعمل هناك. وإذا كان النموذج الأول مشغولاً ينتقل الوكيل تلقائياً إلى النموذج التالي في `FALLBACK_MODELS` ويطبع سطراً يبدأ بعلامة التعجب.
+
+### واجهة الدردشة
+
+الملف `chat.py` يضع الوكيل نفسه خلف صفحة دردشة في المتصفح. شغّل `python chat.py` فيفتح المتصفح العنوان `http://127.0.0.1:8000`. اكتب المهمة بالعربية أو الإنجليزية، فتظهر كل أداة يستدعيها الوكيل لحظة استدعائها، ويتحول سؤال الموافقة إلى زرّين، وتظهر الملاحظات المحفوظة في لوحة `notes.json`. أبقِ نافذة الطرفية مفتوحة، واضغط Ctrl+C فيها للإيقاف. الصفحة تعمل على حاسوبك فقط وليست للنشر على خادم.
 
 ### تنبيهات
 
