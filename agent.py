@@ -25,7 +25,7 @@ from google import genai
 from google.genai import types
 
 # --- Step 1: connect to the model -------------------------------------------
-REQUEST_TIMEOUT_MS = 60_000
+REQUEST_TIMEOUT_MS = 30_000  # a busy model can accept the request and never answer
 client = genai.Client(
     http_options=types.HttpOptions(
         timeout=REQUEST_TIMEOUT_MS,

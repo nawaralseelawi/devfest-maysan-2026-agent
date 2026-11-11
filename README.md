@@ -70,14 +70,16 @@ Done. 500 USD = 740,000 IQD. Saved as "DevFest expenses".
 
 ## When a model is busy
 
-Popular models are sometimes overloaded and answer `503 ... experiencing high demand`. The agent does not hang on that: each request has a 60 second timeout, silent retries are off, and on the first request it moves on to the next model in `FALLBACK_MODELS`:
+Popular models are sometimes overloaded and answer `503 ... experiencing high demand`. The agent does not hang on that: each request has a 30 second timeout, silent retries are off, and on the first request it moves on to the next model in `FALLBACK_MODELS`:
 
 ```
 ! gemini-3.8-flash did not answer: InternalServerError: Error code: 503 - ...
 ! using gemini-3.5-flash-lite for this task
 ```
 
-The first model that answers is kept for the whole task. If that model becomes busy in the middle of the task, the agent waits and tries it again, up to four attempts (5 s, 10 s, 15 s), printing each wait, and then stops with a clear message. To choose the first model yourself, set `GEMINI_MODEL` before running, for example `$env:GEMINI_MODEL="gemini-3.5-flash-lite"`.
+A busy model can also accept the request and stay silent, in which case you wait for the timeout before the agent moves on. The first model that answers is kept for the whole task. If that model becomes busy in the middle of the task, the agent waits and tries it again, up to four attempts (5 s, 10 s, 15 s), printing each wait, and then stops with a clear message. To skip the wait, choose the first model yourself by setting `GEMINI_MODEL` before running, for example `$env:GEMINI_MODEL="gemini-3.5-flash-lite"`.
+
+This path was exercised on the live API on 11 November 2026: `gemini-3.8-flash` timed out, `gemini-3.6-flash` answered 503, and the task completed on `gemini-3.5-flash-lite`.
 
 ## Read before you build on it
 
