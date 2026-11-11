@@ -2,7 +2,7 @@
 
 The code from the talk **"From Gemini to AI Agents: building the next generation of smart applications"**, given at DevFest Maysan 2026 by Nawar S. Alseelawi (University of Misan).
 
-`agent.py` is the agent that was built step by step on screen: about 60 lines of Python, no framework.
+`agent.py` is the agent that was built step by step on screen: about 90 lines of Python, no framework.
 
 ```
 agent = model + tools + loop + guardrails
@@ -23,7 +23,7 @@ Nothing in the code says "rate first, then save". The model orders the steps; th
 
 | Step | In the code | Idea |
 |---|---|---|
-| 1 | `client`, `MODEL` | Connect to the model |
+| 1 | `client`, `MODEL`, `ask_model` | Connect to the model, with a timeout and a fallback model |
 | 2 | `get_exchange_rate`, `save_note`, `TOOLS` | Tools are plain Python functions |
 | 3 | `DECLARATIONS` | Describe each tool to the model: name, description, parameters |
 | 4 | `run_agent` | The loop: call the model, run the tools it requests, feed results back, stop when it answers |
@@ -37,10 +37,16 @@ Requires Python 3.10+ and a Gemini API key from [Google AI Studio](https://aistu
 pip install -r requirements.txt
 ```
 
-Set the key, then run:
+Set the key in the same terminal window, then run. On Windows the default terminal is PowerShell, where `set` does not work:
 
-```bash
-# Windows (cmd)
+```powershell
+# Windows PowerShell (the prompt starts with PS)
+$env:GEMINI_API_KEY="your-key-here"
+python agent.py
+```
+
+```bat
+:: Windows Command Prompt (cmd)
 set GEMINI_API_KEY=your-key-here
 python agent.py
 ```
@@ -62,10 +68,21 @@ Allow save_note? [y/n] y
 Done. 500 USD = 740,000 IQD. Saved as "DevFest expenses".
 ```
 
+## When a model is busy
+
+Popular models are sometimes overloaded and answer `503 ... experiencing high demand`. The agent does not hang on that: each request has a 60 second timeout, silent retries are off, and it moves on to the next model in `FALLBACK_MODELS`:
+
+```
+! gemini-3.8-flash did not answer: InternalServerError: Error code: 503 - ...
+! using gemini-3.5-flash-lite for this task
+```
+
+The first model that answers is kept for the whole task. To choose the first model yourself, set `GEMINI_MODEL` before running, for example `$env:GEMINI_MODEL="gemini-3.5-flash-lite"`.
+
 ## Read before you build on it
 
 - **The exchange rates are demo data.** `RATES` is a fixed dictionary inside the file, not a market feed. A real tool would call a live price source.
-- **It uses the Interactions API** (`client.interactions.create`) with `gemini-3.8-flash`, through `google-genai` 2.3 or newer. Model names change; if the model is retired, set `MODEL` to a current one from the [models page](https://ai.google.dev/gemini-api/docs/models).
+- **It uses the Interactions API** (`client.interactions.create`) with `gemini-3.8-flash` first, through `google-genai` 2.3 or newer. Model names change; if the model is retired, set `MODEL` to a current one from the [models page](https://ai.google.dev/gemini-api/docs/models).
 - **It is a teaching example.** For a real product, add timeouts, per-tool retry limits, logging of every step, input validation in each tool, and an evaluation set. A framework such as [Google ADK](https://adk.dev) gives you most of that.
 - **Tool output is data, not instructions.** Anything a tool returns (a web page, a file, an email) can contain text that tries to steer the model. Keep each tool's permissions minimal and require approval for anything that leaves the system.
 
@@ -83,9 +100,10 @@ Replace the two tools with one from your own work:
 | What you see | Cause | Fix |
 |---|---|---|
 | `ModuleNotFoundError: No module named 'google'` | The package is not installed for this Python | Run `python -m pip install -r requirements.txt` |
-| An error mentioning `API key` or status `401` / `403` | The key is missing or wrong in this terminal window | Set `GEMINI_API_KEY` again in the same window, with no spaces or quotes |
+| `No API key was provided`, or status `401` / `403` | The key is missing or wrong in this terminal window. In PowerShell, `set NAME=value` does nothing useful | Set it again in the same window with the PowerShell form `$env:GEMINI_API_KEY="..."` |
 | Status `404` or "model not found" | The model name is not available to your key | Change `MODEL` to a current Flash model from the models page |
 | Status `429` or `RESOURCE_EXHAUSTED` | Rate limit or quota reached | Wait a minute and run again |
+| `No model answered` | Every model in the list was overloaded or timed out | Wait a minute and run again, or set `GEMINI_MODEL` to another model |
 | Windows blocks a `.pyd` / `.dll` file during install or import | Smart App Control or a similar policy | Use another machine, or run the file in Google Colab |
 
 ## License
@@ -100,7 +118,7 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 
 هذا هو الكود الذي بُني خطوة خطوة في محاضرة **«من Gemini إلى AI Agents: بناء الجيل القادم من التطبيقات الذكية»** في ملتقى DevFest ميسان 2026، تقديم د. نوار سعد السيلاوي (جامعة ميسان).
 
-الملف `agent.py` وكيل كامل في نحو 60 سطراً من Python، بلا أي إطار عمل:
+الملف `agent.py` وكيل كامل في نحو 90 سطراً من Python، بلا أي إطار عمل:
 
 **الوكيل = نموذج + أدوات + حلقة + ضوابط**
 
@@ -111,6 +129,8 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 ### التشغيل
 
 تحتاج Python 3.10 أو أحدث، ومفتاحاً من Google AI Studio. ثبّت الحزمة بالأمر `pip install -r requirements.txt`، وضع المفتاح في متغير البيئة `GEMINI_API_KEY`، ثم شغّل `python agent.py`. وحين يسألك عن السماح بالحفظ اكتب `y`.
+
+في Windows PowerShell يوضع المفتاح بالصيغة `$env:GEMINI_API_KEY="..."`، والأمر `set` لا يعمل هناك. وإذا كان النموذج الأول مشغولاً ينتقل الوكيل تلقائياً إلى النموذج التالي في `FALLBACK_MODELS` ويطبع سطراً يبدأ بعلامة التعجب.
 
 ### تنبيهات
 

@@ -7,17 +7,32 @@ The code below is the code shown on screen, in the same five steps:
   4. the agent loop
   5. guardrails: a step limit, human approval before any write, safe tool errors
 
+On top of what the slides show, this file fails fast instead of hanging: every
+request has a timeout, the SDK's silent retries are switched off, and when a
+model is overloaded the agent moves on to the next model in FALLBACK_MODELS.
+
 Run:      python agent.py
 Needs:    pip install -r requirements.txt   and GEMINI_API_KEY set in the environment
+Optional: GEMINI_MODEL=<model id> to choose the first model to try
 """
 
 import json
+import os
 
 from google import genai
+from google.genai import types
 
 # --- Step 1: connect to the model -------------------------------------------
-client = genai.Client()
+REQUEST_TIMEOUT_MS = 60_000
+client = genai.Client(
+    http_options=types.HttpOptions(
+        timeout=REQUEST_TIMEOUT_MS,
+        retry_options=types.HttpRetryOptions(attempts=1),  # no silent retries
+    )
+)
 MODEL = "gemini-3.8-flash"
+MODEL = os.environ.get("GEMINI_MODEL", MODEL)
+FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite"]
 
 # --- Step 2: the tools are plain Python functions ---------------------------
 RATES = {"USD": 1480, "EUR": 1610}  # demo data
@@ -53,7 +68,7 @@ DECLARATIONS = [
 ]
 
 
-# --- Helpers: wrap text in the step format the Interactions API expects -----
+# --- Helpers ------------------------------------------------------------------
 def user_message(text):
     return {"type": "user_input", "content": [{"type": "text", "text": text}]}
 
@@ -61,6 +76,35 @@ def user_message(text):
 def tool_result(call, result):
     return {"type": "function_result", "name": call.name, "call_id": call.id,
             "result": [{"type": "text", "text": json.dumps(result)}]}
+
+
+def ask_model(history):
+    """Send the history and the tools to the model, with a timeout and a fallback.
+
+    The first model that answers is kept for the rest of the task, because the
+    reasoning steps a model returns are only valid when sent back to that model.
+    """
+    global MODEL
+    first_request = len(history) == 1
+    candidates = [MODEL]
+    if first_request:
+        candidates += [m for m in FALLBACK_MODELS if m != MODEL]
+    for name in candidates:
+        try:
+            reply = client.interactions.create(
+                model=name, input=history, tools=DECLARATIONS, store=False)
+        except Exception as exc:
+            reason = " ".join(str(exc).split())[:160]
+            print(f"! {name} did not answer: {type(exc).__name__}: {reason}")
+            continue
+        if name != MODEL:
+            print(f"! using {name} for this task")
+            MODEL = name
+        return reply
+    raise SystemExit(
+        "No model answered. Wait a minute and run again, or choose another model "
+        "by setting GEMINI_MODEL."
+    )
 
 
 # --- Step 5: guardrails ------------------------------------------------------
@@ -86,8 +130,7 @@ MAX_STEPS = 8
 def run_agent(task):
     history = [user_message(task)]
     for _ in range(MAX_STEPS):
-        reply = client.interactions.create(
-            model=MODEL, input=history, tools=DECLARATIONS, store=False)
+        reply = ask_model(history)
         history += [s.model_dump(exclude_none=True) for s in reply.steps]
         calls = [s for s in reply.steps if s.type == "function_call"]
         if not calls:
