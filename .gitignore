@@ -5,4 +5,4 @@ __pycache__/
 venv/
 notes.json
 outbox.json
-requests.json
+appeals.json

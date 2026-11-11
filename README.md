@@ -92,26 +92,30 @@ python more_tools.py
 
 The task has a condition in it: add up the expenses, convert the total, and message the accountant only if the total is above 1,000,000 IQD. The model reads the expenses, asks for the rate, compares, and then asks to send. No line of code fixes that order. The chat page loads these tools too, and shows `outbox.json` under `notes.json`.
 
-## A second agent: university services assistant
+## A second agent: results and appeals assistant
 
-`university_tools.py` turns the same loop into a university services assistant with four tools:
+`appeal_tools.py` turns the same loop into an assistant that shows a student their results, checks the failed courses, and suggests an appeal where it finds grounds:
 
 | Tool | What it does | Kind |
 |---|---|---|
-| `search_regulations(topic)` | reads the rule on a topic (second round, absence, deferral, transcript) | read |
-| `get_exam_schedule(course)` | reads the first-round and second-round exam dates of a course | read |
-| `get_my_grades(exam_round)` | reads the grades of the signed-in student | read |
-| `open_request(kind, details)` | files an official request in `requests.json` | act, asks first |
+| `get_my_results(exam_round)` | reads coursework, final exam, recorded total and status for each course | read |
+| `review_result(course)` | checks in code whether coursework + final equals the recorded total | read |
+| `check_appeal_window(course)` | reads whether an appeal can still be submitted | read |
+| `submit_appeal(course, reason)` | files an appeal in `appeals.json` | act, asks first |
 
 ```
-python university_tools.py
+python appeal_tools.py
 ```
 
-The task: did I fail a course, what do the rules say, when is the second-round exam, and open a request. The agent reads the grades, looks up the rule instead of guessing it, reads the exam date, and asks before it files the request.
+How the work is split:
 
-Note what the grade and request tools do not take: a student number. The student is identified by the program (`STUDENT_ID`, which a real system takes from the login), never by the model, so nobody can talk the agent into reading someone else's record. Identity and permissions belong to the program; the model only chooses tools.
+- **The code finds evidence.** In the demo data one failed course has a recorded total of 45 while its parts add up to 55.
+- **The model may add advice** from the marks and from what the student says (strong coursework, a very low final, "I answered every question"). It is told to present that as an estimate and never to promise an outcome.
+- **The student decides.** Nothing is submitted without approval.
+- **Rules that matter live in code.** `submit_appeal` refuses a closed window and a second appeal for the same course, whatever the model was told.
+- **No tool can change a mark**, and no tool takes a student number: the program identifies the student (`STUDENT_ID`, from the login in a real system).
 
-All data in the file is invented for the demo. It is not the regulations or records of any real university. A real assistant would search the official regulation documents and call the registration system. The chat page loads these tools too and shows `requests.json`.
+All data in the file is invented for the demo. It is not the regulations or records of any real university. The chat page loads these tools too and shows `appeals.json`.
 
 ## Ideas for your own tools
 
@@ -201,9 +205,9 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 
 الملف `more_tools.py` يضيف أداتين من دون أي تغيير في الحلقة: `get_expenses` تقرأ جدول مصاريف تجريبياً، و`send_message` تكتب الرسالة في الملف `outbox.json` ولا ترسل شيئاً، وتطلب الموافقة أولاً. شغّله بالأمر `python more_tools.py`، وصفحة الدردشة تحمّل الأداتين وتعرض `outbox.json` تحت `notes.json`. وفي القسم الإنكليزي أعلاه جدول بأفكار أدوات لوكلاء الخدمات الجامعية والسوق المحلي والمزارع والأرشفة.
 
-### وكيل ثانٍ: مساعد الخدمات الجامعية
+### وكيل ثانٍ: مساعد النتائج والاعتراضات
 
-الملف `university_tools.py` يحوّل الحلقة نفسها إلى مساعد خدمات جامعية بأربع أدوات: البحث في التعليمات، وجدول الامتحانات، ودرجات الطالب، وفتح طلب رسمي بموافقة الطالب. شغّله بالأمر `python university_tools.py`. ولاحظ أن أداتي الدرجات والطلب لا تأخذان رقم الطالب: البرنامج يحدد الطالب من تسجيل الدخول، والنموذج يختار الأداة فقط. كل البيانات في الملف تجريبية، وليست تعليمات جامعة حقيقية أو سجلاتها.
+الملف `appeal_tools.py` يحوّل الحلقة نفسها إلى مساعد يعرض للطالب نتائجه، ويفحص المواد التي رسب فيها، ويقترح الاعتراض حيث يجد سبباً. الكود يكشف الدليل (مجموع مسجّل لا يساوي السعي زائد النهائي)، والنموذج قد يضيف نصيحة من الدرجات ومن كلام الطالب ويقول إنها تقدير، والطالب يقرر، ولا يُقدَّم شيء بلا موافقته. شغّله بالأمر `python appeal_tools.py`. لا توجد أداة تغيّر درجة، ولا أداة تأخذ رقم الطالب. وكل البيانات تجريبية، وليست تعليمات جامعة حقيقية أو سجلاتها.
 
 ### تنبيهات
 

@@ -2,7 +2,7 @@
 
 This file adds no agent logic. It reuses the tools, the declarations and
 ask_model() from agent.py, plus the extra tools in more_tools.py and
-university_tools.py, and runs the same loop one step at a time so the page can
+appeal_tools.py, and runs the same loop one step at a time so the page can
 show every tool call as it happens. The approval that agent.py asks
 for in the terminal becomes two buttons on the page.
 
@@ -24,7 +24,7 @@ from pathlib import Path
 
 import agent
 import more_tools  # noqa: F401  (registers two extra tools on the agent)
-import university_tools  # noqa: F401  (registers the university assistant's four tools)
+import appeal_tools  # noqa: F401  (registers the appeals assistant's four tools)
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("PORT", "8000"))
@@ -33,7 +33,7 @@ PAGE = Path(__file__).with_name("chat.html").read_bytes()
 FILES = {
     "notes": Path("notes.json"),        # save_note in agent.py
     "outbox": Path("outbox.json"),      # send_message in more_tools.py
-    "requests": Path("requests.json"),  # open_request in university_tools.py
+    "appeals": Path("appeals.json"),    # submit_appeal in appeal_tools.py
 }
 MAX_BODY_BYTES = 16_384
 MAX_MESSAGE_CHARS = 2_000
