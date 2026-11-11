@@ -8,8 +8,9 @@ The code below is the code shown on screen, in the same five steps:
   5. guardrails: a step limit, human approval before any write, safe tool errors
 
 On top of what the slides show, this file fails fast instead of hanging: every
-request has a timeout, the SDK's silent retries are switched off, and when a
-model is overloaded the agent moves on to the next model in FALLBACK_MODELS.
+request has a timeout, the SDK's silent retries are switched off, a busy model
+is retried a few times with a visible wait, and on the first request the agent
+moves on to the next model in FALLBACK_MODELS.
 
 Run:      python agent.py
 Needs:    pip install -r requirements.txt   and GEMINI_API_KEY set in the environment
@@ -18,6 +19,7 @@ Optional: GEMINI_MODEL=<model id> to choose the first model to try
 
 import json
 import os
+import time
 
 from google import genai
 from google.genai import types
@@ -33,6 +35,8 @@ client = genai.Client(
 MODEL = "gemini-3.8-flash"
 MODEL = os.environ.get("GEMINI_MODEL", MODEL)
 FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite"]
+MAX_ATTEMPTS = 4          # tries per request when the models are busy
+RETRY_WAIT_SECONDS = 5    # wait grows with each attempt: 5 s, 10 s, 15 s
 
 # --- Step 2: the tools are plain Python functions ---------------------------
 RATES = {"USD": 1480, "EUR": 1610}  # demo data
@@ -83,24 +87,36 @@ def ask_model(history):
 
     The first model that answers is kept for the rest of the task, because the
     reasoning steps a model returns are only valid when sent back to that model.
+    A busy model (503, 429, timeout) is retried a few times with a visible wait.
     """
     global MODEL
     first_request = len(history) == 1
     candidates = [MODEL]
     if first_request:
         candidates += [m for m in FALLBACK_MODELS if m != MODEL]
-    for name in candidates:
-        try:
-            reply = client.interactions.create(
-                model=name, input=history, tools=DECLARATIONS, store=False)
-        except Exception as exc:
-            reason = " ".join(str(exc).split())[:160]
-            print(f"! {name} did not answer: {type(exc).__name__}: {reason}")
-            continue
-        if name != MODEL:
-            print(f"! using {name} for this task")
-            MODEL = name
-        return reply
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        for name in candidates:
+            try:
+                reply = client.interactions.create(
+                    model=name, input=history, tools=DECLARATIONS, store=False)
+            except Exception as exc:
+                status = getattr(exc, "status_code", None)
+                reason = " ".join(str(exc).split())[:160]
+                print(f"! {name} did not answer: {type(exc).__name__}: {reason}")
+                if status in (400, 401, 403):
+                    raise SystemExit("The request was rejected. Check GEMINI_API_KEY and the model name.")
+                continue
+            if not reply.steps:
+                print(f"! {name} returned an empty reply")
+                continue
+            if name != MODEL:
+                print(f"! using {name} for this task")
+                MODEL = name
+            return reply
+        if attempt < MAX_ATTEMPTS:
+            wait = RETRY_WAIT_SECONDS * attempt
+            print(f"! waiting {wait} s before attempt {attempt + 1} of {MAX_ATTEMPTS}")
+            time.sleep(wait)
     raise SystemExit(
         "No model answered. Wait a minute and run again, or choose another model "
         "by setting GEMINI_MODEL."
