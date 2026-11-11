@@ -31,7 +31,7 @@ def send_message(to, text):
 
 # The same three moves as in agent.py: the function, its description, its guardrail.
 agent.TOOLS.update({"get_expenses": get_expenses, "send_message": send_message})
-agent.DECLARATIONS += [
+DECLARATIONS = [
     {"type": "function",
      "name": "get_expenses",
      "description": "Get the total expenses of a project in US dollars.",
@@ -46,6 +46,8 @@ agent.DECLARATIONS += [
                                    "text": {"type": "string"}},
                     "required": ["to", "text"]}},
 ]
+known = {d["name"] for d in agent.DECLARATIONS}
+agent.DECLARATIONS += [d for d in DECLARATIONS if d["name"] not in known]  # safe to import twice
 agent.NEEDS_APPROVAL.add("send_message")
 
 if __name__ == "__main__":

@@ -90,7 +90,7 @@ The page is served to this computer only (`127.0.0.1`). It is a demo, not someth
 python more_tools.py
 ```
 
-The task has a condition in it: add up the expenses, convert the total, and message the accountant only if the total is above 1,000,000 IQD. The model reads the expenses, asks for the rate, compares, and then asks to send. No line of code fixes that order. The chat page loads these tools too.
+The task has a condition in it: add up the expenses, convert the total, and message the accountant only if the total is above 1,000,000 IQD. The model reads the expenses, asks for the rate, compares, and then asks to send. No line of code fixes that order. The chat page loads these tools too, and shows `outbox.json` under `notes.json`.
 
 ## Ideas for your own tools
 
@@ -178,7 +178,7 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 
 ### أدوات أكثر والحلقة نفسها
 
-الملف `more_tools.py` يضيف أداتين من دون أي تغيير في الحلقة: `get_expenses` تقرأ جدول مصاريف تجريبياً، و`send_message` تكتب الرسالة في الملف `outbox.json` ولا ترسل شيئاً، وتطلب الموافقة أولاً. شغّله بالأمر `python more_tools.py`. وفي القسم الإنكليزي أعلاه جدول بأفكار أدوات لوكلاء الخدمات الجامعية والسوق المحلي والمزارع والأرشفة.
+الملف `more_tools.py` يضيف أداتين من دون أي تغيير في الحلقة: `get_expenses` تقرأ جدول مصاريف تجريبياً، و`send_message` تكتب الرسالة في الملف `outbox.json` ولا ترسل شيئاً، وتطلب الموافقة أولاً. شغّله بالأمر `python more_tools.py`، وصفحة الدردشة تحمّل الأداتين وتعرض `outbox.json` تحت `notes.json`. وفي القسم الإنكليزي أعلاه جدول بأفكار أدوات لوكلاء الخدمات الجامعية والسوق المحلي والمزارع والأرشفة.
 
 ### تنبيهات
 

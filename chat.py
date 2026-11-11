@@ -28,6 +28,7 @@ HOST = "127.0.0.1"
 PORT = int(os.environ.get("PORT", "8000"))
 PAGE = Path(__file__).with_name("chat.html").read_bytes()
 NOTES_FILE = Path("notes.json")
+OUTBOX_FILE = Path("outbox.json")  # written by send_message in more_tools.py
 MAX_BODY_BYTES = 16_384
 MAX_MESSAGE_CHARS = 2_000
 
@@ -141,15 +142,18 @@ SESSION = Session()
 LOCK = threading.Lock()  # one conversation, one step at a time
 
 
-def read_notes():
-    notes = []
-    if NOTES_FILE.exists():
-        for line in NOTES_FILE.read_text(encoding="utf-8").splitlines():
+def read_lines(path):
+    """The last records of a JSON-lines file written by a tool; unreadable lines are skipped."""
+    records = []
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
             try:
-                notes.append(json.loads(line))
+                record = json.loads(line)
             except ValueError:
                 continue
-    return notes[-20:]
+            if isinstance(record, dict):
+                records.append(record)
+    return records[-20:]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -172,7 +176,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _reply(self, events):
         self._json(200, {"events": events, "state": SESSION.state,
-                         "model": agent.MODEL, "notes": read_notes()})
+                         "model": agent.MODEL, "notes": read_lines(NOTES_FILE),
+                         "outbox": read_lines(OUTBOX_FILE)})
 
     def _local_only(self):
         """Refuse requests that another website or another host name sent here."""
