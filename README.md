@@ -82,6 +82,30 @@ Leave the terminal window open while you use the page, and press Ctrl+C there to
 
 The page is served to this computer only (`127.0.0.1`). It is a demo, not something to put on a server.
 
+## More tools, same loop
+
+`more_tools.py` adds two tools without touching the loop: `get_expenses` reads a small expense table, and `send_message` writes a message to `outbox.json` (demo: nothing is sent anywhere) and asks for approval first.
+
+```
+python more_tools.py
+```
+
+The task has a condition in it: add up the expenses, convert the total, and message the accountant only if the total is above 1,000,000 IQD. The model reads the expenses, asks for the rate, compares, and then asks to send. No line of code fixes that order. The chat page loads these tools too.
+
+## Ideas for your own tools
+
+A tool is one Python function, one entry in `TOOLS`, and one description in `DECLARATIONS`. Tools that only read can run freely. Tools that write, send, pay or delete go in `NEEDS_APPROVAL`.
+
+| Agent | Tools that read | Tools that act (ask first) |
+|---|---|---|
+| University services assistant | `search_regulations(query)`, `get_exam_schedule(department, stage)`, `get_grades(student_id)` | `open_request(student_id, kind, details)` |
+| Local market agent | `get_exchange_rate(currency)` from a live source, `get_price(item, city)`, `compare_prices(item)` | `set_price_alert(item, limit)` |
+| Farmer's assistant | `get_weather(city, days)`, `get_crop_price(crop, market)`, `get_irrigation_schedule(district)` | `send_sms(phone, text)` |
+| Archive agent | `ocr_document(file)`, `search_archive(query)`, `get_document(doc_id)` | `index_document(file, fields)` |
+| Everyday office work | `read_sheet(name, cells)`, `search_files(query)`, `get_calendar(date)` | `send_telegram(chat_id, text)`, `add_event(date, title)` |
+
+These are suggestions, not code in this repository. Start with one read-only tool on data you already have, and write its description as if you were explaining it to a new colleague.
+
 ## When a model is busy
 
 Popular models are sometimes overloaded and answer `503 ... experiencing high demand`. The agent does not hang on that: each request has a 30 second timeout, silent retries are off, and on the first request it moves on to the next model in `FALLBACK_MODELS`:
@@ -151,6 +175,10 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 ### واجهة الدردشة
 
 الملف `chat.py` يضع الوكيل نفسه خلف صفحة دردشة في المتصفح. شغّل `python chat.py` فيفتح المتصفح العنوان `http://127.0.0.1:8000`. اكتب المهمة بالعربية أو الإنجليزية، فتظهر كل أداة يستدعيها الوكيل لحظة استدعائها، ويتحول سؤال الموافقة إلى زرّين، وتظهر الملاحظات المحفوظة في لوحة `notes.json`. أبقِ نافذة الطرفية مفتوحة، واضغط Ctrl+C فيها للإيقاف. الصفحة تعمل على حاسوبك فقط وليست للنشر على خادم.
+
+### أدوات أكثر والحلقة نفسها
+
+الملف `more_tools.py` يضيف أداتين من دون أي تغيير في الحلقة: `get_expenses` تقرأ جدول مصاريف تجريبياً، و`send_message` تكتب الرسالة في الملف `outbox.json` ولا ترسل شيئاً، وتطلب الموافقة أولاً. شغّله بالأمر `python more_tools.py`. وفي القسم الإنكليزي أعلاه جدول بأفكار أدوات لوكلاء الخدمات الجامعية والسوق المحلي والمزارع والأرشفة.
 
 ### تنبيهات
 

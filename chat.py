@@ -1,7 +1,7 @@
 """DevFest Maysan 2026: the same agent, behind a chat page in the browser.
 
 This file adds no agent logic. It reuses the tools, the declarations and
-ask_model() from agent.py, and runs the same loop one step at a time so the
+ask_model() from agent.py (plus the two extra tools in more_tools.py), and runs the same loop one step at a time so the
 page can show every tool call as it happens. The approval that agent.py asks
 for in the terminal becomes two buttons on the page.
 
@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import agent
+import more_tools  # noqa: F401  (registers two extra tools on the agent)
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("PORT", "8000"))
