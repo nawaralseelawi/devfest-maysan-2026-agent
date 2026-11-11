@@ -92,6 +92,27 @@ python more_tools.py
 
 The task has a condition in it: add up the expenses, convert the total, and message the accountant only if the total is above 1,000,000 IQD. The model reads the expenses, asks for the rate, compares, and then asks to send. No line of code fixes that order. The chat page loads these tools too, and shows `outbox.json` under `notes.json`.
 
+## A second agent: university services assistant
+
+`university_tools.py` turns the same loop into a university services assistant with four tools:
+
+| Tool | What it does | Kind |
+|---|---|---|
+| `search_regulations(topic)` | reads the rule on a topic (second round, absence, deferral, transcript) | read |
+| `get_exam_schedule(course)` | reads the first-round and second-round exam dates of a course | read |
+| `get_my_grades(exam_round)` | reads the grades of the signed-in student | read |
+| `open_request(kind, details)` | files an official request in `requests.json` | act, asks first |
+
+```
+python university_tools.py
+```
+
+The task: did I fail a course, what do the rules say, when is the second-round exam, and open a request. The agent reads the grades, looks up the rule instead of guessing it, reads the exam date, and asks before it files the request.
+
+Note what the grade and request tools do not take: a student number. The student is identified by the program (`STUDENT_ID`, which a real system takes from the login), never by the model, so nobody can talk the agent into reading someone else's record. Identity and permissions belong to the program; the model only chooses tools.
+
+All data in the file is invented for the demo. It is not the regulations or records of any real university. A real assistant would search the official regulation documents and call the registration system. The chat page loads these tools too and shows `requests.json`.
+
 ## Ideas for your own tools
 
 A tool is one Python function, one entry in `TOOLS`, and one description in `DECLARATIONS`. Tools that only read can run freely. Tools that write, send, pay or delete go in `NEEDS_APPROVAL`.
@@ -179,6 +200,10 @@ MIT. Use it, change it, and build on it freely. See [LICENSE](LICENSE).
 ### أدوات أكثر والحلقة نفسها
 
 الملف `more_tools.py` يضيف أداتين من دون أي تغيير في الحلقة: `get_expenses` تقرأ جدول مصاريف تجريبياً، و`send_message` تكتب الرسالة في الملف `outbox.json` ولا ترسل شيئاً، وتطلب الموافقة أولاً. شغّله بالأمر `python more_tools.py`، وصفحة الدردشة تحمّل الأداتين وتعرض `outbox.json` تحت `notes.json`. وفي القسم الإنكليزي أعلاه جدول بأفكار أدوات لوكلاء الخدمات الجامعية والسوق المحلي والمزارع والأرشفة.
+
+### وكيل ثانٍ: مساعد الخدمات الجامعية
+
+الملف `university_tools.py` يحوّل الحلقة نفسها إلى مساعد خدمات جامعية بأربع أدوات: البحث في التعليمات، وجدول الامتحانات، ودرجات الطالب، وفتح طلب رسمي بموافقة الطالب. شغّله بالأمر `python university_tools.py`. ولاحظ أن أداتي الدرجات والطلب لا تأخذان رقم الطالب: البرنامج يحدد الطالب من تسجيل الدخول، والنموذج يختار الأداة فقط. كل البيانات في الملف تجريبية، وليست تعليمات جامعة حقيقية أو سجلاتها.
 
 ### تنبيهات
 

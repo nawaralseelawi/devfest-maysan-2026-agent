@@ -1,8 +1,9 @@
 """DevFest Maysan 2026: the same agent, behind a chat page in the browser.
 
 This file adds no agent logic. It reuses the tools, the declarations and
-ask_model() from agent.py (plus the two extra tools in more_tools.py), and runs the same loop one step at a time so the
-page can show every tool call as it happens. The approval that agent.py asks
+ask_model() from agent.py, plus the extra tools in more_tools.py and
+university_tools.py, and runs the same loop one step at a time so the page can
+show every tool call as it happens. The approval that agent.py asks
 for in the terminal becomes two buttons on the page.
 
 Run:   python chat.py
@@ -23,12 +24,17 @@ from pathlib import Path
 
 import agent
 import more_tools  # noqa: F401  (registers two extra tools on the agent)
+import university_tools  # noqa: F401  (registers the university assistant's four tools)
 
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("PORT", "8000"))
 PAGE = Path(__file__).with_name("chat.html").read_bytes()
-NOTES_FILE = Path("notes.json")
-OUTBOX_FILE = Path("outbox.json")  # written by send_message in more_tools.py
+# Files the tools write, shown as panels on the page.
+FILES = {
+    "notes": Path("notes.json"),        # save_note in agent.py
+    "outbox": Path("outbox.json"),      # send_message in more_tools.py
+    "requests": Path("requests.json"),  # open_request in university_tools.py
+}
 MAX_BODY_BYTES = 16_384
 MAX_MESSAGE_CHARS = 2_000
 
@@ -176,8 +182,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _reply(self, events):
         self._json(200, {"events": events, "state": SESSION.state,
-                         "model": agent.MODEL, "notes": read_lines(NOTES_FILE),
-                         "outbox": read_lines(OUTBOX_FILE)})
+                         "model": agent.MODEL,
+                         **{name: read_lines(path) for name, path in FILES.items()}})
 
     def _local_only(self):
         """Refuse requests that another website or another host name sent here."""
